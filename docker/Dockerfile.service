@@ -1,0 +1,17 @@
+# syntax=docker/dockerfile:1
+
+ARG SERVICE=users
+FROM golang:1.22 as builder
+WORKDIR /src
+COPY go.mod go.sum ./
+RUN go mod download
+COPY . .
+RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -ldflags="-s -w" -o /out/service ./cmd/${SERVICE}
+
+FROM gcr.io/distroless/base-debian12:nonroot
+WORKDIR /app
+COPY --from=builder /out/service /app/${SERVICE}
+EXPOSE 8080
+USER nonroot
+ENTRYPOINT ["/app/${SERVICE}"]
+

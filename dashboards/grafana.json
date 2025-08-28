@@ -1,0 +1,10 @@
+{
+  "title": "Gateway Overview",
+  "panels": [
+    {"type": "graph", "title": "Requests", "targets": [{"expr": "sum(rate(gateway_requests_total[1m])) by (status_class)"}]},
+    {"type": "graph", "title": "Latency", "targets": [{"expr": "histogram_quantile(0.95, sum(rate(gateway_request_duration_seconds_bucket[1m])) by (le))"}]},
+    {"type": "graph", "title": "In Flight", "targets": [{"expr": "gateway_requests_in_flight"}]},
+    {"type": "graph", "title": "Rate Limit", "targets": [{"expr": "gateway_ratelimit_blocked_total"}]}
+  ]
+}
+

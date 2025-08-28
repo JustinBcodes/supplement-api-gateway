@@ -1,0 +1,151 @@
+version: "3.9"
+services:
+  redis:
+    image: redis:7.2
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  postgres-users:
+    image: postgres:15
+    environment:
+      POSTGRES_PASSWORD: userspass
+      POSTGRES_USER: users
+      POSTGRES_DB: users
+    ports: ["5433:5432"]
+    volumes: ["pgusers:/var/lib/postgresql/data"]
+
+  postgres-products:
+    image: postgres:15
+    environment:
+      POSTGRES_PASSWORD: productspass
+      POSTGRES_USER: products
+      POSTGRES_DB: products
+    ports: ["5434:5432"]
+    volumes: ["pgproducts:/var/lib/postgresql/data"]
+
+  postgres-orders:
+    image: postgres:15
+    environment:
+      POSTGRES_PASSWORD: orderspass
+      POSTGRES_USER: orders
+      POSTGRES_DB: orders
+    ports: ["5435:5432"]
+    volumes: ["pgorders:/var/lib/postgresql/data"]
+
+  svc-users:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.service
+      args: { SERVICE: users }
+    image: supplx/svc-users:dev
+    depends_on: [postgres-users]
+    environment:
+      USERS_ADDR: ":8080"
+    ports: ["18080:8080"]
+
+  svc-products-1:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.service
+      args: { SERVICE: products }
+    image: supplx/svc-products:dev
+    depends_on: [postgres-products, redis]
+    environment:
+      PRODUCTS_ADDR: ":8080"
+
+  svc-products-2:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.service
+      args: { SERVICE: products }
+    image: supplx/svc-products:dev
+    depends_on: [postgres-products, redis]
+    environment:
+      PRODUCTS_ADDR: ":8080"
+
+  svc-orders-1:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.service
+      args: { SERVICE: orders }
+    image: supplx/svc-orders:dev
+    depends_on: [postgres-orders, svc-payments-1, svc-payments-2]
+    environment:
+      ORDERS_ADDR: ":8080"
+
+  svc-orders-2:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.service
+      args: { SERVICE: orders }
+    image: supplx/svc-orders:dev
+    depends_on: [postgres-orders, svc-payments-1, svc-payments-2]
+    environment:
+      ORDERS_ADDR: ":8080"
+
+  svc-payments-1:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.service
+      args: { SERVICE: payments }
+    image: supplx/svc-payments:dev
+    environment:
+      PAYMENTS_ADDR: ":8080"
+      FAIL_RATE: "0.2"
+      LATENCY_MS: "8"
+
+  svc-payments-2:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.service
+      args: { SERVICE: payments }
+    image: supplx/svc-payments:dev
+    environment:
+      PAYMENTS_ADDR: ":8080"
+      FAIL_RATE: "0.2"
+      LATENCY_MS: "8"
+
+  gateway:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.gateway
+    image: supplx/gateway:dev
+    depends_on:
+      - svc-users
+      - svc-products-1
+      - svc-products-2
+      - svc-orders-1
+      - svc-orders-2
+      - svc-payments-1
+      - svc-payments-2
+      - redis
+    environment:
+      GATEWAY_ADDR: ":8080"
+    ports: ["8080:8080"]
+
+  prometheus:
+    image: prom/prometheus:v2.53.0
+    volumes:
+      - ./configs/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+    ports: ["9090:9090"]
+
+  grafana:
+    image: grafana/grafana:10.4.2
+    ports: ["3000:3000"]
+    depends_on: [prometheus]
+    environment:
+      GF_SECURITY_ADMIN_PASSWORD: admin
+    volumes:
+      - ./dashboards:/var/lib/grafana/dashboards
+
+volumes:
+  pgusers: {}
+  pgproducts: {}
+  pgorders: {}
+
+

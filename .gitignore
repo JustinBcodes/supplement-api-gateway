@@ -1,0 +1,11 @@
+bin/
+dist/
+.DS_Store
+*.out
+*.log
+*.exe
+vendor/
+coverage/
+bench/results/
+
+

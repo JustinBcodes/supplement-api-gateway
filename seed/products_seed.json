@@ -1,0 +1,6 @@
+[
+  {"name":"Whey Protein Isolate","category":"protein","price_cents":2999,"inventory":200},
+  {"name":"Creatine Monohydrate","category":"performance","price_cents":1499,"inventory":300},
+  {"name":"Fish Oil (Omega-3)","category":"health","price_cents":1299,"inventory":180},
+  {"name":"Magnesium Glycinate","category":"health","price_cents":1599,"inventory":160}
+]

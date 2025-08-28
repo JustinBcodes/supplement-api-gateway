@@ -1,0 +1,15 @@
+routes:
+  - match: "/v1/products/**"
+    upstreams: ["http://svc-products-1:8080", "http://svc-products-2:8080"]
+    policies:
+      rate_limit: { key: "ip", capacity: 300, refill_per_sec: 100, burst: 60 }
+      circuit_breaker: { window_s: 20, error_rate: 0.5, min_requests: 50, open_ms: 30000, probe: 5 }
+      retries: { max: 1, backoff_ms: 20, jitter_ms: 10, methods: ["GET","HEAD"] }
+
+  - match: "/v1/orders/**"
+    upstreams: ["http://svc-orders-1:8080", "http://svc-orders-2:8080"]
+    policies:
+      rate_limit: { key: "userSub", capacity: 60, refill_per_sec: 1, burst: 5 }
+      auth: { type: "jwt", jwks_url: "http://svc-users:8080/.well-known/jwks.json" }
+
+

@@ -1,0 +1,18 @@
+# syntax=docker/dockerfile:1
+
+FROM golang:1.22 as builder
+WORKDIR /src
+COPY go.mod go.sum ./
+RUN go mod download
+COPY . .
+RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -ldflags="-s -w" -o /out/gateway ./cmd/gateway
+
+FROM gcr.io/distroless/base-debian12:nonroot
+WORKDIR /app
+COPY --from=builder /out/gateway /app/gateway
+COPY configs/routes.example.yaml /app/configs/routes.yaml
+ENV GATEWAY_CONFIG=/app/configs/routes.yaml
+EXPOSE 8080
+USER nonroot
+ENTRYPOINT ["/app/gateway"]
+
