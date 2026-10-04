@@ -2,7 +2,10 @@ package obs
 
 import (
 	"github.com/prometheus/client_golang/prometheus"
+	"sync"
 )
+
+var registerOnce sync.Once
 
 var (
 	RequestsTotal = prometheus.NewCounterVec(
@@ -38,13 +41,13 @@ var (
 )
 
 func MustRegister() {
-	prometheus.MustRegister(RequestsTotal)
-	prometheus.MustRegister(RequestsInFlight)
-	prometheus.MustRegister(RequestDuration)
-	prometheus.MustRegister(RLAllowed)
-	prometheus.MustRegister(RLBlocked)
-	prometheus.MustRegister(CBState)
-	prometheus.MustRegister(UpstreamHealthy)
+	registerOnce.Do(func() {
+		prometheus.MustRegister(RequestsTotal)
+		prometheus.MustRegister(RequestsInFlight)
+		prometheus.MustRegister(RequestDuration)
+		prometheus.MustRegister(RLAllowed)
+		prometheus.MustRegister(RLBlocked)
+		prometheus.MustRegister(CBState)
+		prometheus.MustRegister(UpstreamHealthy)
+	})
 }
-
-

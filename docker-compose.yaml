@@ -142,6 +142,13 @@ services:
       GF_SECURITY_ADMIN_PASSWORD: admin
     volumes:
       - ./dashboards:/var/lib/grafana/dashboards
+      - ./dashboards/provisioning:/etc/grafana/provisioning:ro
+
+  control-ui:
+    build:
+      context: ./frontend
+    ports: ["4173:80"]
+    depends_on: [prometheus]
 
 volumes:
   pgusers: {}

@@ -2,20 +2,20 @@
 set -euo pipefail
 
 if ! command -v wrk >/dev/null 2>&1; then
-  echo "wrk is required" >&2
+  echo "Install wrk to run the full-stack load test" >&2
   exit 1
 fi
 
 BASE=${BASE:-http://localhost:8080}
-DUR=60s
-WARM=15s
+TARGET=${TARGET:-/v1/products}
+THREADS=${THREADS:-4}
+CONNECTIONS=${CONNECTIONS:-64}
+DURATION=${DURATION:-30s}
+mkdir -p bench/results
+output="bench/results/wrk-$(date -u +%Y%m%dT%H%M%SZ).txt"
 
-echo "Baseline: GET /v1/products"
-wrk -t8 -c256 -d${DUR} -L -s <(cat <<'LUA'
-done = function(summary, latency, requests)
-  -- placeholder output
-end
-LUA
-) ${BASE}/v1/products > /dev/null
-
-
+echo "Target: ${BASE}${TARGET}"
+echo "Threads: ${THREADS}; connections: ${CONNECTIONS}; duration: ${DURATION}"
+echo "The product route has an IP-based rate limit. HTTP 429 responses are expected during load."
+wrk -t"${THREADS}" -c"${CONNECTIONS}" -d"${DURATION}" --latency "${BASE}${TARGET}" | tee "$output"
+echo "Saved raw output to $output"

@@ -9,6 +9,7 @@ import (
 
 	"github.com/redis/go-redis/v9"
 	"supplx-gateway-marketplace/internal/middleware/userctx"
+	"supplx-gateway-marketplace/internal/obs"
 	"supplx-gateway-marketplace/pkg/ratelimit"
 )
 
@@ -37,11 +38,13 @@ func (m *RateLimiter) WithPolicy(pol RLPolicy, next http.Handler) http.Handler {
 			return
 		}
 		if !allowed {
+			obs.RLBlocked.Inc()
 			w.Header().Set("Retry-After", strconv.FormatInt(val, 10))
 			w.WriteHeader(http.StatusTooManyRequests)
 			_, _ = w.Write([]byte("rate limited"))
 			return
 		}
+		obs.RLAllowed.Inc()
 		w.Header().Set("X-RateLimit-Remaining", strconv.FormatInt(val, 10))
 		next.ServeHTTP(w, r)
 	})
@@ -82,5 +85,3 @@ func clientIP(r *http.Request) string {
 	}
 	return h
 }
-
-
